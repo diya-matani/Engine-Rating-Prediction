@@ -1,0 +1,14 @@
+numpy
+pandas
+matplotlib
+seaborn
+scipy
+statsmodels
+scikit-learn
+xgboost
+lightgbm
+openpyxl
+ipykernel
+jupyter
+streamlit
+graphviz
