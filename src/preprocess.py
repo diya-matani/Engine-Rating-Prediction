@@ -84,3 +84,27 @@ def get_pipeline(df_train):
         ])
     
     return preprocessor
+
+def prepare_input_df(user_inputs, features_df, mode):
+    """
+    Prepares the input DataFrame for prediction by merging user inputs with defaults.
+    """
+    full_input = {}
+    
+    # We populate the full input dictionary based on features_df columns
+    for col in features_df.columns:
+        if col in user_inputs:
+            full_input[col] = user_inputs[col]
+        else:
+            # Fallback for missing keys (either hidden by 'Quick Scan' or not provided)
+            if features_df[col].dtype == 'object':
+                full_input[col] = features_df[col].mode()[0]
+            else:
+                full_input[col] = features_df[col].median()
+                
+    input_df = pd.DataFrame([full_input])
+    
+    # Ensure correct column order
+    input_df = input_df[features_df.columns]
+    
+    return input_df

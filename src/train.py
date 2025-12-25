@@ -1,11 +1,16 @@
 import os
 import pickle
 import pandas as pd
+import sys
+
+# Ensure src can be imported if running directly
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_squared_error, r2_score
-from preprocess import load_data, basic_cleaning, get_pipeline
+from src.preprocess import load_data, basic_cleaning, get_pipeline
 
 def train_model():
     # Setup paths
@@ -14,8 +19,12 @@ def train_model():
     models_dir = os.path.join(base_dir, 'models')
     os.makedirs(models_dir, exist_ok=True)
     
-    print("Loading data...")
-    df = load_data(data_path)
+    print(f"Loading data from {data_path}...")
+    try:
+        df = load_data(data_path)
+    except FileNotFoundError:
+        print("Error: data.xlsx not found.")
+        return
     
     print("Cleaning data...")
     df_clean = basic_cleaning(df)
@@ -37,6 +46,7 @@ def train_model():
     print("Building pipeline...")
     preprocessor = get_pipeline(X_train)
     
+    # Using RandomForest as per documentation ("Council of Mechanics")
     model = Pipeline(steps=[
         ('preprocessor', preprocessor),
         ('regressor', RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1))
