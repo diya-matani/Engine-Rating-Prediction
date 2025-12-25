@@ -83,8 +83,8 @@ def render_sidebar(features_df):
         # MODE SWITCHER
         mode = st.radio(
             "Analysis Mode",
-            ["⚡ Quick Scan", "🔬 Detailed Inspection"],
-            captions=["5 Key Parameters", "Full 60+ Point Check"]
+            ["⚡ Quick Scan", "🔬 Detailed Inspection", "📂 Batch Processing"],
+            captions=["5 Key Parameters", "Full 60+ Point Check", "Upload CSV/Excel"]
         )
         
         st.markdown("---")
@@ -109,7 +109,14 @@ def render_sidebar(features_df):
             opts_fuel = features_df['fuel_type'].unique().tolist() if not features_df.empty else ["Petrol"]
             input_fuel = st.selectbox("Fuel Type", opts_fuel)
             
-            if mode == "⚡ Quick Scan":
+            if mode == "📂 Batch Processing":
+                st.info("Upload a dataset to generate predictions for multiple vehicles.")
+                uploaded_file = st.file_uploader("Upload CSV or Excel", type=['csv', 'xlsx'])
+                
+                if uploaded_file:
+                    user_inputs['batch_file'] = uploaded_file
+                    
+            elif mode == "⚡ Quick Scan":
                 input_battery = st.selectbox("Battery Condition", ["Yes", "No"], index=0, help="Is the battery working?")
                 
                 # Store these specific quick inputs

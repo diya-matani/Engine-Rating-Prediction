@@ -72,18 +72,53 @@ def main():
             else:
                 with st.spinner("Processing..."):
                     try:
-                        # Prepare Input
-                        input_df = prepare_input_df(user_inputs, features_df, mode)
+                        if mode == "📂 Batch Processing":
+                            if 'batch_file' not in user_inputs:
+                                st.error("Please upload a file first.")
+                            else:
+                                # Load batch data
+                                batch_df = pd.read_csv(user_inputs['batch_file']) if user_inputs['batch_file'].name.endswith('.csv') else pd.read_excel(user_inputs['batch_file'])
+                                
+                                # We need to ensure batch_df has the same columns as features_df
+                                # For simplicity, let's assume the user uploads valid data or we try to match
+                                # We can use basic_cleaning on it just in case?
+                                batch_clean = basic_cleaning(batch_df)
+                                
+                                # Align columns (missing -> median/mode from training data)
+                                # iterating rows is slow, better to use vector ops
+                                
+                                # 1. Ensure all model features exist in batch_clean
+                                for col in features_df.columns:
+                                    if col not in batch_clean.columns:
+                                        # Fill with default from features_df
+                                        if features_df[col].dtype == 'object':
+                                            batch_clean[col] = features_df[col].mode()[0]
+                                        else:
+                                            batch_clean[col] = features_df[col].median()
+                                
+                                # 2. Select only relevant columns
+                                X_batch = batch_clean[features_df.columns]
+                                
+                                # Predict
+                                preds = model.predict(X_batch)
+                                batch_clean['Predicted Rating'] = preds
+                                
+                                st.success(f"Processed {len(batch_clean)} records.")
+                                st.dataframe(batch_clean[['Predicted Rating'] + list(batch_clean.columns[:5])]) # Show rating and first few cols
+                                
+                                # Download
+                                csv = batch_clean.to_csv(index=False).encode('utf-8')
+                                st.download_button("Download Results", csv, "predictions.csv", "text/csv")
                         
-                        # Predict
-                        pred_val = model.predict(input_df)[0]
-                        
-                        # Show Result
-                        ui.render_prediction_result(pred_val)
+                        else:
+                            # Single Prediction
+                            input_df = prepare_input_df(user_inputs, features_df, mode)
+                            pred_val = model.predict(input_df)[0]
+                            ui.render_prediction_result(pred_val)
                             
                     except Exception as e:
                         st.error(f"Error during prediction: {e}")
-                        st.write("Input Debug:", user_inputs)
+                        # st.write("Input Debug:", user_inputs)
         else:
             ui.render_empty_state()
 

@@ -55,8 +55,7 @@ def test_prepare_input_df():
     assert input_df['fuel_type'].iloc[0] == 'Petrol' # User input
     assert input_df['month'].iloc[0] == 3.0 # Median of [1, 5]
     assert input_df['odometer_reading'].iloc[0] == 15000.0 # Median 
-    assert input_df['battery_value'].iloc[0] == 'Petrol' # Mode (alphabetic sort tie-break or similar) -- wait, mode of ['Yes','No']? 
-    # Actually mode of ['Yes', 'No'] might be 'No' or 'Yes'. 
+    assert input_df['battery_value'].iloc[0] in ['Yes', 'No'] # Mode fallback
     
     # Let's check type
     assert isinstance(input_df, pd.DataFrame)
