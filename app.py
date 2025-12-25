@@ -1,7 +1,12 @@
 import streamlit as st
 import pandas as pd
 import os
+import sys
 import pickle
+
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from src.preprocess import load_data, basic_cleaning, prepare_input_df
 from src import ui, analytics
 
