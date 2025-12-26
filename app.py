@@ -4,6 +4,8 @@ import numpy as np
 import pickle
 import json
 import re
+import plotly.graph_objects as go
+import plotly.express as px
 
 # Set page config
 st.set_page_config(
@@ -43,6 +45,25 @@ def main():
             - **Diagnostics:** Engine sound, oil leakage, battery status, smoke color, etc.
         - **Logic:** The model was trained on historical data where categorical features were combined (e.g., specific battery issues) to capture complex patterns.
         """)
+        
+        # Feature Importance Plot
+        if hasattr(model, 'feature_importances_'):
+            st.markdown("### Model Feature Importance")
+            # Create a DF for importance
+            # We need column names from model_columns
+            # Ensure length matches
+            if len(model_columns) == len(model.feature_importances_):
+                fi_df = pd.DataFrame({
+                    'Feature': model_columns,
+                    'Importance': model.feature_importances_
+                }).sort_values(by='Importance', ascending=False).head(10)
+                
+                fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', 
+                                title="Top 10 Influential Features", color='Importance')
+                fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
+                st.plotly_chart(fig_fi, use_container_width=True)
+            else:
+                st.warning("Feature importance dimension mismatch.")
 
     if not model:
         return
@@ -187,9 +208,73 @@ def main():
                 status = "Poor Condition 🛑"
                 color = "red"
             
-            st.markdown(f"### Status: :{color}[{status}]")
+            # st.markdown(f"### Status: :{color}[{status}]")
+            
+            col_gauge, col_radar = st.columns([1, 1])
+            
+            with col_gauge:
+                # Gauge Chart
+                fig_gauge = go.Figure(go.Indicator(
+                    mode = "gauge+number",
+                    value = prediction,
+                    domain = {'x': [0, 1], 'y': [0, 1]},
+                    title = {'text': "Engine Rating"},
+                    gauge = {
+                        'axis': {'range': [0, 5], 'tickwidth': 1, 'tickcolor': "white"},
+                        'bar': {'color': color},
+                        'bgcolor': "white",
+                        'borderwidth': 2,
+                        'bordercolor': "gray",
+                        'steps': [
+                            {'range': [0, 2], 'color': '#ffcccc'},
+                            {'range': [2, 3], 'color': '#ffebcc'},
+                            {'range': [3, 4], 'color': '#cce5ff'},
+                            {'range': [4, 5], 'color': '#ccffcc'}],
+                    }
+                ))
+                fig_gauge.update_layout(height=400, margin=dict(l=20, r=20, t=50, b=20))
+                st.plotly_chart(fig_gauge, use_container_width=True)
+                
+            with col_radar:
+                # Radar Chart for Component Health
+                # Logical inference based on inputs (checkboxes)
+                # 100 = Perfect, -20 for each issue
+                
+                health_scores = {
+                    'Battery': 100 - (100 if battery_jump_start else 0),
+                    'Engine Oil': 100 - (100 if engine_oil_leak else 0),
+                    'Engine Sound': 100 - (50 if engine_sound_abnormal else 0),
+                    'Exhaust': 100 - (100 if exhaust_smoke_white else 0),
+                    'Clutch': 100 - (50 if clutch_hard else 0),
+                    'Gears': 100 - (50 if gear_shifting_hard else 0)
+                }
+                
+                # Normalize so it looks nicer (min 20)
+                for k, v in health_scores.items():
+                    health_scores[k] = max(v, 20)
+                
+                fig_radar = go.Figure(data=go.Scatterpolar(
+                    r=list(health_scores.values()),
+                    theta=list(health_scores.keys()),
+                    fill='toself',
+                    name='Component Health'
+                ))
+                
+                fig_radar.update_layout(
+                    polar=dict(
+                        radialaxis=dict(
+                        visible=True,
+                        range=[0, 100]
+                        )),
+                    showlegend=False,
+                    title="Component Health Diagnostic",
+                    height=400,
+                    margin=dict(l=40, r=40, t=50, b=20)
+                )
+                st.plotly_chart(fig_radar, use_container_width=True)
             
             # Additional Context
+            st.markdown(f"### Status: :{color}[{status}]")
             if prediction < 3.0:
                 st.warning("The predicted engine rating is low. Careful inspection is recommended.")
             else:
