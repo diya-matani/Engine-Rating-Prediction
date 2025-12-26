@@ -64,6 +64,8 @@ def load_data():
         df['inspection_date'] = df['inspectionStartTime'].dt.date
         df['inspection_mon'] = df['inspectionStartTime'].dt.month_name()
         df['inspection_month_num'] = df['inspectionStartTime'].dt.month
+        df['inspection_hour'] = df['inspectionStartTime'].dt.hour
+        df['inspection_dow'] = df['inspectionStartTime'].dt.day_name()
     return df
 
 model, model_columns = load_resources()
@@ -352,6 +354,64 @@ def main():
                 
                 fig_ts.update_layout(xaxis_title="Date", yaxis_title="Number of Inspections", height=400, margin=dict(l=20, r=20, t=20, b=20))
                 st.plotly_chart(fig_ts, use_container_width=True)
+
+            st.markdown("---")
+            st.header("🔬 Deep Dive: Statistical Analysis")
+            st.caption("Advanced statistical distributions and correlations requested for deeper data understanding.")
+
+            # 5. Odometer Boxplot
+            st.subheader("5. Odometer Reading Distribution")
+            st.caption("Visualizes the spread of odometer readings and identifies outliers (dots beyond the whiskers).")
+            if 'odometer_reading' in df_history.columns:
+                fig_odo_box = px.box(df_history, y="odometer_reading", points="outliers", 
+                                     title="Odometer Reading Boxplot")
+                fig_odo_box.update_layout(height=400)
+                st.plotly_chart(fig_odo_box, use_container_width=True)
+
+            # 6. Correlation Heatmap
+            st.subheader("6. Feature Correlation Heatmap")
+            st.caption("Shows how features are related. **1.0** = perfect positive correlation, **-1.0** = perfect negative correlation.")
+            
+            # Select columns for correlation roughly matching the user's image
+            corr_cols = ['year', 'inspection_month_num', 'odometer_reading', 'rating_engineTransmission']
+            # Filter to those that exist
+            existing_corr_cols = [c for c in corr_cols if c in df_history.columns]
+            
+            if len(existing_corr_cols) > 1:
+                corr_matrix = df_history[existing_corr_cols].corr()
+                fig_corr = px.imshow(corr_matrix, text_auto=True, aspect="auto",
+                                     color_continuous_scale='RdBu_r', origin='lower')
+                fig_corr.update_layout(height=400)
+                st.plotly_chart(fig_corr, use_container_width=True)
+
+            # 7, 8, 9. Rating Distributions by Time
+            st.subheader("7. Rating Variability by Time Factors")
+            st.caption("Boxplots showing how the Engine Rating varies across different time periods. Useful for spotting operational inconsistencies.")
+            
+            if 'rating_engineTransmission' in df_history.columns:
+                tab_h, tab_m, tab_d = st.tabs(["By Hour", "By Month", "By Day of Week"])
+                
+                with tab_h:
+                    if 'inspection_hour' in df_history.columns:
+                        fig_box_h = px.box(df_history, x='inspection_hour', y='rating_engineTransmission',
+                                           labels={'inspection_hour': 'Hour of Day', 'rating_engineTransmission': 'Engine Rating'})
+                        st.plotly_chart(fig_box_h, use_container_width=True)
+                
+                with tab_m:
+                    if 'inspection_mon' in df_history.columns:
+                        # Order months correctly? 'inspection_month_num' helps sorting but 'inspection_mon' is name
+                        # We can sort dataframe by num
+                        df_sorted = df_history.sort_values('inspection_month_num')
+                        fig_box_m = px.box(df_sorted, x='inspection_mon', y='rating_engineTransmission',
+                                           labels={'inspection_mon': 'Month', 'rating_engineTransmission': 'Engine Rating'})
+                        st.plotly_chart(fig_box_m, use_container_width=True)
+
+                with tab_d:
+                    if 'inspection_dow' in df_history.columns:
+                        # Order might be random, but usually fine for exploration
+                        fig_box_d = px.box(df_history, x='inspection_dow', y='rating_engineTransmission',
+                                           labels={'inspection_dow': 'Day of Week', 'rating_engineTransmission': 'Engine Rating'})
+                        st.plotly_chart(fig_box_d, use_container_width=True)
             
     except Exception as e:
         st.error(f"Prediction Error: {e}")
