@@ -171,24 +171,29 @@ def main():
     try:
         prediction = model.predict(X_input)[0]
         
-        # Calculate r_values needed for charts (Fixing NameError)
-        categories = ['Battery', 'Oil System', 'Sound', 'Exhaust', 'Clutch', 'Transmission']
-        r_values = [
-            100 if not battery_jump_start else 40,
-            100 if not engine_oil_leak else 30,
-            100 if not engine_sound_abnormal else 50,
-            100 if not exhaust_smoke_white else 40,
-            100 if not clutch_hard else 60,
-            100 if not gear_shifting_hard else 60
-        ]
-        
-        # --- Top-Level Tabs (Honeywell Style) ---
+        # --- Helper for Honeywell Aesthetic ---
+        def apply_honeywell_style(fig, title=None, height=300):
+            fig.update_layout(
+                title=title,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                font=dict(color='#e0e0e0'),
+                height=height,
+                margin=dict(l=20, r=20, t=40, b=20),
+                xaxis=dict(showgrid=True, gridcolor='#333333'),
+                yaxis=dict(showgrid=True, gridcolor='#333333'),
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            return fig
+
+        # --- Top-Level Tabs ---
         tab_inspection, tab_trends, tab_data = st.tabs(["🔍 Current Inspection", "📈 Market Intelligence", "📄 Inspection Records"])
         
-        # TAB 1: Real-time Analysis
+        # ================= TAB 1: Real-time Analysis =================
         with tab_inspection:
             st.markdown("### Real-time Quality Monitor")
-            # KPIs
+            
+            # --- Row 1: KPI Overview ---
             kpi1, kpi2, kpi3, kpi4 = st.columns(4)
             with kpi1:
                 st.metric("Predicted Output", f"{prediction:.2f} / 5.0")
@@ -196,7 +201,7 @@ def main():
                  status_map = {5: "Excellent", 4: "Very Good", 3: "Average", 2: "Below Average", 1: "Poor", 0: "Critical"}
                  p_int = max(0, min(5, int(round(prediction))))
                  state_text = status_map.get(p_int, "Unknown")
-                 st.metric("Quality Grade", state_text, delta_color="normal")
+                 st.metric("Quality Grade", state_text)
             with kpi3:
                  total_checks = 6
                  failed_checks = sum([1 for x in [battery_jump_start, engine_oil_leak, engine_sound_abnormal, exhaust_smoke_white, clutch_hard, gear_shifting_hard] if x])
@@ -207,9 +212,10 @@ def main():
 
             st.divider()
 
-            # Trend Analysis (Degradation)
+            # --- Row 2: Trend Analysis ---
             st.subheader("📉 Predictive Degradation Analysis")
-            st.caption("Projected rating decay over future mileage.")
+            st.caption("Projected rating decay if usage continues without maintenance.")
+            
             future_odo = [odometer_reading + i*10000 for i in range(6)]
             future_preds = []
             for odo in future_odo:
@@ -221,95 +227,173 @@ def main():
                 
             fig_trend = go.Figure()
             fig_trend.add_trace(go.Scatter(x=future_odo, y=future_preds, mode='lines+markers', name='Projected', line=dict(color='#ff4b4b', width=3)))
-            fig_trend.update_layout(title="Future Rating Prediction", xaxis_title="Odometer", yaxis_title="Rating", height=300, margin=dict(t=30, b=20))
+            apply_honeywell_style(fig_trend, "Future Rating Prediction", height=320)
             st.plotly_chart(fig_trend, use_container_width=True)
             st.info(f"ℹ️ Prediction drops to **{future_preds[-1]:.2f}** after +50k km.")
 
             st.divider()
 
-            # Component Analysis
+            # --- Row 3: Component Analysis ---
             col_pie, col_radar = st.columns(2)
+            
             with col_pie:
                 st.subheader("System Status")
                 labels = ['Healthy', 'Issues']
                 values = [total_checks - failed_checks, failed_checks]
                 fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4, marker=dict(colors=['#00cc96', '#ef553b']))])
-                fig_pie.update_layout(height=300, margin=dict(t=20, b=20))
+                apply_honeywell_style(fig_pie, height=300)
                 st.plotly_chart(fig_pie, use_container_width=True)
+                
             with col_radar:
                 st.subheader("Health Profile")
+                categories = ['Battery', 'Oil System', 'Sound', 'Exhaust', 'Clutch', 'Transmission']
+                r_values = [
+                    100 if not battery_jump_start else 40,
+                    100 if not engine_oil_leak else 30,
+                    100 if not engine_sound_abnormal else 50,
+                    100 if not exhaust_smoke_white else 40,
+                    100 if not clutch_hard else 60,
+                    100 if not gear_shifting_hard else 60
+                ]
                 fig_radar = go.Figure()
                 fig_radar.add_trace(go.Scatterpolar(r=r_values, theta=categories, fill='toself', name='Score', line_color='#636efa'))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100])), showlegend=False, height=300, margin=dict(t=20, b=20))
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100]), bgcolor='rgba(0,0,0,0)'))
+                apply_honeywell_style(fig_radar, height=300)
                 st.plotly_chart(fig_radar, use_container_width=True)
-                
-            # Explainability
+
+            # --- Row 4: Explainability ---
             st.divider()
             st.subheader("🧠 Decision Factors")
             if hasattr(model, 'feature_importances_'):
                 fi_df = pd.DataFrame({'Feature': model_columns, 'Importance': model.feature_importances_}).sort_values(by='Importance', ascending=False).head(10)
                 fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', color='Importance')
-                fig_fi.update_layout(yaxis={'categoryorder':'total ascending'}, height=300, margin=dict(t=0, b=0))
+                apply_honeywell_style(fig_fi, height=350)
+                fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
                 st.plotly_chart(fig_fi, use_container_width=True)
 
-        # TAB 2: Historical Trends
+
+        # ================= TAB 2: Historical Trends (Linear & Explained) =================
         with tab_trends:
             if df_history is not None:
-                st.markdown("### 📈 Historical Market Analysis")
+                st.markdown("### 📈 Market Intelligence Hub")
+                st.markdown("Detailed analytics derived from the historical inspection database. Scroll down for sequential analysis.")
                 
-                # 1. Reg Year
-                st.subheader("1. Vehicle Vintage")
-                if 'registrationYear' in df_history.columns:
-                    rc = df_history['registrationYear'].value_counts().sort_index()
-                    st.plotly_chart(px.bar(x=rc.index, y=rc.values, labels={'x':'Year', 'y':'Count'}).update_layout(height=300), use_container_width=True)
-                
-                c1, c2 = st.columns(2)
-                with c1: 
-                    st.subheader("2. Daily Intensity")
-                    if 'inspection_date' in df_history.columns:
-                        dc = df_history.groupby('inspection_date').size().reset_index(name='count')
-                        st.plotly_chart(px.histogram(dc, x="count", marginal="violin").update_layout(height=300), use_container_width=True)
-                with c2:
-                    st.subheader("3. Seasonality")
-                    if 'inspection_mon' in df_history.columns:
-                        mc = df_history.groupby(['inspection_month_num', 'inspection_mon']).size().reset_index(name='count').sort_values('inspection_month_num')
-                        st.plotly_chart(px.bar(mc, x='inspection_mon', y='count').update_layout(height=300), use_container_width=True)
-                        
-                st.subheader("4. Volume Trends")
+                # 1. Volume Trend
+                st.divider()
+                st.subheader("1. Timeline Analysis")
+                st.markdown("**Insight:** Monitors the daily volume of inspections over time. The orange line represents the 7-day moving average, smoothing out daily fluctuations to reveal the true underlying trend.")
                 if 'inspection_date' in df_history.columns:
                     ts = df_history.groupby('inspection_date').size().reset_index(name='Original')
                     ts['Mean'] = ts['Original'].rolling(7).mean()
                     fig_ts = go.Figure()
-                    fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Original'], name='Daily'))
-                    fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Mean'], name='7-Day Avg'))
-                    fig_ts.update_layout(height=350, margin=dict(t=20, b=20))
+                    fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Original'], name='Daily', line=dict(color='rgba(135, 206, 235, 0.5)', width=1)))
+                    fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Mean'], name='7-Day Avg', line=dict(color='#FFA15A', width=2)))
+                    apply_honeywell_style(fig_ts, "Daily Inspection Volume Trend", height=380)
                     st.plotly_chart(fig_ts, use_container_width=True)
-                    
-                st.markdown("---")
-                st.caption("Deep Dive Distributions")
-                c3, c4 = st.columns(2)
-                with c3:
-                    if 'odometer_reading' in df_history.columns:
-                        st.plotly_chart(px.box(df_history, y="odometer_reading", title="Odometer Outliers").update_layout(height=350), use_container_width=True)
-                with c4:
-                    cols = ['year', 'inspection_month_num', 'odometer_reading', 'rating_engineTransmission']
-                    ex = [c for c in cols if c in df_history.columns]
-                    if len(ex)>1: st.plotly_chart(px.imshow(df_history[ex].corr(), text_auto=True).update_layout(height=350), use_container_width=True)
-            else:
-                st.warning("Historical data not available.")
+                
+                # 2. Seasonality
+                st.divider()
+                st.subheader("2. Seasonal Patterns")
+                st.markdown("**Insight:** Aggregates inspections by month to highlight seasonal peaks. Identifying these high-activity periods helps in resource planning and predicting market influx.")
+                if 'inspection_mon' in df_history.columns:
+                    mc = df_history.groupby(['inspection_month_num', 'inspection_mon']).size().reset_index(name='count').sort_values('inspection_month_num')
+                    fig_mon = px.bar(mc, x='inspection_mon', y='count', color='count', color_continuous_scale='Blues')
+                    apply_honeywell_style(fig_mon, "Monthly Inspection Volume", height=380)
+                    st.plotly_chart(fig_mon, use_container_width=True)
 
-        # TAB 3: Data Table
-        with tab_data:
-            st.markdown("### 📄 Inspection Records")
-            if df_history is not None:
-                st.dataframe(df_history.head(200), use_container_width=True)
-                csv = df_history.head(1000).to_csv(index=False).encode('utf-8')
-                st.download_button("Download CSV", csv, "data.csv")
+                # 3. Vintage
+                st.divider()
+                st.subheader("3. Asset Vintage")
+                st.markdown("**Insight:** Break down of inspected vehicles by their registration year. This distribution reveals the age profile of the fleet being serviced, indicating whether the market is dominated by newer or older vehicles.")
+                year_col = 'year' if 'year' in df_history.columns else ('registrationYear' if 'registrationYear' in df_history.columns else None)
+                if year_col:
+                    rc = df_history[year_col].value_counts().sort_index()
+                    fig_reg = px.bar(x=rc.index, y=rc.values, labels={'x':'Year', 'y':'Count'}, color_discrete_sequence=['#636efa'])
+                    apply_honeywell_style(fig_reg, "Vehicle Registration Year Distribution", height=380)
+                    st.plotly_chart(fig_reg, use_container_width=True)
+                else:
+                    st.info("Registration Year data unavailable.")
+
+                # 4. Intensity
+                st.divider()
+                st.subheader("4. Operational Intensity")
+                st.markdown("**Insight:** A histogram showing the frequency of daily inspection counts. It answers the question: 'How often do we perform X inspections a day?', helping to benchmark operational capacity.")
+                if 'inspection_date' in df_history.columns:
+                    dc = df_history.groupby('inspection_date').size().reset_index(name='count')
+                    fig_hist = px.histogram(dc, x="count", marginal="violin", nbins=30, color_discrete_sequence=['#00cc96'])
+                    apply_honeywell_style(fig_hist, "Distribution of Daily Inspection Counts", height=380)
+                    st.plotly_chart(fig_hist, use_container_width=True)
+
+                # 5. Odometer
+                st.divider()
+                st.subheader("5. Usage Profile (Odometer)")
+                st.markdown("**Insight:** Visualizes the spread of mileage across all inspected cars. The boxplot highlights the median usage and identifies 'outliers'—vehicles with exceptionally high or low mileage.")
+                if 'odometer_reading' in df_history.columns:
+                    fig_box = px.box(df_history, y="odometer_reading", points="outliers", color_discrete_sequence=['#AB63FA'])
+                    apply_honeywell_style(fig_box, "Odometer Reading Distribution", height=400)
+                    st.plotly_chart(fig_box, use_container_width=True)
+                        
+                # 6. Heatmap
+                st.divider()
+                st.subheader("6. Correlation Analysis")
+                st.markdown("**Insight:** A heatmap revealing hidden relationships between variables. Darker or distinct colors indicate strong positive or negative correlations, guiding which factors (like age or mileage) most strongly influence ratings.")
+                cols = ['year', 'inspection_month_num', 'odometer_reading', 'rating_engineTransmission']
+                ex = [c for c in cols if c in df_history.columns]
+                if len(ex)>1: 
+                    corr = df_history[ex].corr()
+                    fig_corr = px.imshow(corr, text_auto=True, color_continuous_scale='RdBu_r', origin='lower', aspect="auto")
+                    apply_honeywell_style(fig_corr, "Feature Correlation Matrix", height=450)
+                    st.plotly_chart(fig_corr, use_container_width=True)
             else:
-                st.info("No data.")
+                st.warning("Historical data not available for trends.")
+
+
+        # ================= TAB 3: Data Table (Enhanced) =================
+        with tab_data:
+            st.markdown("### 📄 Inspection Records Database")
+            if df_history is not None:
+                # Controls for Sorting/Filtering
+                c_filter, c_sort = st.columns([1, 2])
+                with c_filter:
+                    show_weak = st.checkbox("⚠️ Show Weak Engines Only (Rating ≤ 2)", value=False, help="Filter to show only cars with poor engine ratings.")
+                with c_sort:
+                    sort_mode = st.radio("Sort By:", ["Newest First", "Rating: Low → High", "Rating: High → Low"], horizontal=True)
+
+                # Select and Rename Columns for clearer display
+                display_cols = ['inspectionStartTime', 'year', 'rating_engineTransmission', 'odometer_reading', 'fuel_type']
+                existing_cols = [c for c in display_cols if c in df_history.columns]
+                
+                df_view = df_history.copy()
+                
+                # Apply Filter
+                if show_weak and 'rating_engineTransmission' in df_view.columns:
+                    df_view = df_view[df_view['rating_engineTransmission'] <= 2]
+                
+                # Apply Sort
+                if sort_mode == "Rating: Low → High" and 'rating_engineTransmission' in df_view.columns:
+                    df_view = df_view.sort_values('rating_engineTransmission', ascending=True)
+                elif sort_mode == "Rating: High → Low" and 'rating_engineTransmission' in df_view.columns:
+                    df_view = df_view.sort_values('rating_engineTransmission', ascending=False)
+                elif sort_mode == "Newest First" and 'inspectionStartTime' in df_view.columns:
+                    df_view = df_view.sort_values('inspectionStartTime', ascending=False)
+
+                # Display with highlighting
+                st.dataframe(
+                    df_view[existing_cols].style.background_gradient(cmap='Reds', subset=['rating_engineTransmission'], vmin=0, vmax=5), 
+                    use_container_width=True,
+                    height=500
+                )
+                
+                # Download
+                csv = df_view[existing_cols].to_csv(index=False).encode('utf-8')
+                st.download_button("Download Filtered Data (CSV)", csv, "filtered_inspections.csv", "text/csv")
+            else:
+                st.info("No historical data to display.")
 
     except Exception as e:
+        import traceback
         st.error(f"Prediction Error: {e}")
+        st.markdown(f"```\n{traceback.format_exc()}\n```")
 
 if __name__ == "__main__":
     main()
