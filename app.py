@@ -11,6 +11,13 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from src.preprocess import load_data, basic_cleaning, prepare_input_df
 from src import ui, analytics
+import importlib
+import src.preprocess
+import src.ui
+import src.analytics
+importlib.reload(src.preprocess)
+importlib.reload(src.ui)
+importlib.reload(src.analytics)
 
 # Set page config must be the very first Streamlit command
 st.set_page_config(page_title="Engine Rating AI", layout="wide", initial_sidebar_state="expanded", page_icon="🏎️")

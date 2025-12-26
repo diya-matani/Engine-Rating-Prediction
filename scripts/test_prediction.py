@@ -22,10 +22,9 @@ def test_prediction():
         print("ERROR: Model file not found!")
         return
 
-    # Load Model
+    import joblib
     try:
-        with open(model_path, 'rb') as f:
-            model = pickle.load(f)
+        model = joblib.load(model_path)
         print("Model loaded successfully.")
     except Exception as e:
         print(f"ERROR: Failed to load model: {e}")
