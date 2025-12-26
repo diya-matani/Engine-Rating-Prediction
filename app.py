@@ -69,17 +69,35 @@ def load_model_pipeline():
     if os.path.exists(MODEL_PATH):
         try:
             model = joblib.load(MODEL_PATH)
-            # Sanity Check (Optional but good) - If this fails, we catch and retrain
+            
+            # --- VALIDATION (Smoketest) ---
+            # We must verify the model actually works with the current scikit-learn version.
+            # Loading is not enough; we must predict.
+            try:
+                df = load_data(DATA_PATH)
+                df_clean = basic_cleaning(df)
+                if 'rating_engineTransmission' in df_clean.columns:
+                    X_val = df_clean.drop(columns=['rating_engineTransmission']).iloc[:5] # Test on 5 rows
+                else:
+                    X_val = df_clean.iloc[:5]
+                
+                # Try prediction
+                model.predict(X_val)
+                # If we get here, the model is valid!
+            except Exception as val_e:
+                print(f"Model validation failed ({val_e}). Discarding model.")
+                model = None # Force retraining
+                
         except Exception as e:
             st.warning(f"Could not load pre-trained model ({e}). Retraining...")
             model = None
     
-    # 2. If missing or failed, RETRAIN
+    # 2. If missing or failed validations, RETRAIN
     if model is None:
-        with st.spinner("⚠️ Version Mismatch Detected. Auto-retraining model for compatibility..."):
+        with st.spinner("⚠️ Incompatible Model Detected. Auto-retraining to fix..."):
             model = retrain_model_in_app()
             if model:
-                st.success("Model retrained successfully!")
+                st.success("✅ Model repaired successfully!")
                 
     return model
 
