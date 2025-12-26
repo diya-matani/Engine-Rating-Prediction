@@ -1,9 +1,0 @@
-============================= test session starts =============================
-platform win32 -- Python 3.11.0, pytest-9.0.2, pluggy-1.6.0
-rootdir: C:\Users\dmata\OneDrive - vitbhopal.ac.in\Documents\GitHub\Engine-Rating-Prediction
-plugins: anyio-4.12.0, langsmith-0.4.59
-collected 2 items
-
-tests\test_preprocess.py ..                                              [100%]
-
-============================== 2 passed in 1.39s ==============================
