@@ -148,14 +148,68 @@ def main():
         prediction = model.predict(X_input)[0]
         rating_star = round(prediction)
         
-        # 1. Top Level KPIs
+        st.markdown("---")
+        st.header("📊 Inspection Report")
+        
+        # --- Section 1: Health Profile ---
+        st.subheader("1. Vehicle Health Profile")
+        st.caption("This radar chart visualizes the condition of key vehicle systems based on your inspection inputs. A full polygon indicates perfect health, while dents indicate reported issues.")
+        
+        # ... (Radar Chart Logic) ...
+        # Calculate scores
+        # Logic matches previous turn, just visualizing nicely
+        categories = ['Battery', 'Oil System', 'Sound', 'Exhaust', 'Clutch', 'Transmission']
+        r_values = [
+            100 if not battery_jump_start else 40,
+            100 if not engine_oil_leak else 30,
+            100 if not engine_sound_abnormal else 50,
+            100 if not exhaust_smoke_white else 40,
+            100 if not clutch_hard else 60,
+            100 if not gear_shifting_hard else 60
+        ]
+        
+        col_radar_chart, col_radar_text = st.columns([2, 1])
+        with col_radar_chart:
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=r_values,
+                theta=categories,
+                fill='toself',
+                name='Current Status',
+                line_color='deepskyblue'
+            ))
+            fig_radar.update_layout(
+                polar=dict(
+                    radialaxis=dict(visible=True, range=[0, 100])
+                ),
+                margin=dict(l=40, r=40, t=30, b=30),
+                height=300
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+            
+        with col_radar_text:
+            st.markdown(f"**Health Summary:**")
+            issues_count = len([x for x in r_values if x < 100])
+            if issues_count == 0:
+                st.success("✅ No specific issues reported.")
+            else:
+                st.warning(f"⚠️ {issues_count} system(s) flagged for attention.")
+                for cat, val in zip(categories, r_values):
+                    if val < 100:
+                        st.markdown(f"- **{cat}**: Issue Detected")
+
+        st.markdown("---")
+
+        # --- Section 2: Prediction ---
+        st.subheader("2. AI Engine Rating")
+        st.caption(f"The LightGBM model has analyzed the inputs (including {fuel_type} engine type, {odometer_reading} km usage) to predict the standardized rating.")
+
+        # Metric Cards Row
         kpi1, kpi2, kpi3 = st.columns(3)
-        
         with kpi1:
-            st.metric(label="Predicted Rating", value=f"{prediction:.2f} / 5.0", delta=f"{prediction - 3.0:.2f} vs Avg")
-        
+            st.metric(label="Predicted Score", value=f"{prediction:.2f} / 5.0")
         with kpi2:
-            status_map = {
+             status_map = {
                 5: ("Excellent", "green"),
                 4: ("Very Good", "green"),
                 3: ("Average", "orange"),
@@ -163,89 +217,53 @@ def main():
                 1: ("Poor", "red"),
                 0: ("Critical", "red")
             }
-            # Clamp to 0-5
-            p_int = max(0, min(5, int(round(prediction))))
-            state_text, state_color = status_map.get(p_int, ("Unknown", "grey"))
-            st.metric(label="Condition Status", value=state_text)
-            
+             p_int = max(0, min(5, int(round(prediction))))
+             state_text, state_color = status_map.get(p_int, ("Unknown", "grey"))
+             st.metric(label="Condition", value=state_text)
         with kpi3:
-            st.metric(label="Odometer", value=f"{odometer_reading:,} km")
-            
-        st.markdown("---")
-        
-        # 2. Visualizations
-        tab1, tab2 = st.tabs(["📊 Diagnostic Analysis", "🧠 Model Insights"])
-        
-        with tab1:
-            col_gauge, col_radar = st.columns([1, 2])
-            
-            with col_gauge:
-                st.subheader("Rating Gauge")
-                fig_gauge = go.Figure(go.Indicator(
-                    mode = "gauge+number",
-                    value = prediction,
-                    domain = {'x': [0, 1], 'y': [0, 1]},
-                    gauge = {
-                        'axis': {'range': [0, 5], 'tickwidth': 1},
-                        'bar': {'color': state_color},
-                        'steps': [
-                            {'range': [0, 2], 'color': 'rgba(255, 0, 0, 0.2)'},
-                            {'range': [2, 4], 'color': 'rgba(255, 165, 0, 0.2)'},
-                            {'range': [4, 5], 'color': 'rgba(0, 128, 0, 0.2)'}],
-                        'threshold': {
-                            'line': {'color': "black", 'width': 4},
-                            'thickness': 0.75,
-                            'value': prediction}
-                    }
-                ))
-                st.plotly_chart(fig_gauge, use_container_width=True)
-                
-            with col_radar:
-                st.subheader("Observation Impact Radar")
-                # Calculate simple impact scores based on inputs
-                # Start with baseline perfect score and subtract penalty if check
-                # This is synthetic for visualization, representing how inputs affect 'health'
-                
-                categories = ['Battery', 'Oil System', 'Sound', 'Exhaust', 'Clutch', 'Transmission']
-                r_values = [
-                    100 if not battery_jump_start else 40,
-                    100 if not engine_oil_leak else 30,
-                    100 if not engine_sound_abnormal else 50,
-                    100 if not exhaust_smoke_white else 40,
-                    100 if not clutch_hard else 60,
-                    100 if not gear_shifting_hard else 60
-                ]
-                
-                fig_radar = go.Figure()
-                fig_radar.add_trace(go.Scatterpolar(
-                    r=r_values,
-                    theta=categories,
-                    fill='toself',
-                    name='Current Status',
-                    line_color=state_color
-                ))
-                fig_radar.update_layout(
-                    polar=dict(
-                        radialaxis=dict(visible=True, range=[0, 100])
-                    ),
-                    showlegend=False
-                )
-                st.plotly_chart(fig_radar, use_container_width=True)
+             st.metric(label="Mileage Impact", value="High" if odometer_reading > 100000 else "Moderate" if odometer_reading > 50000 else "Low")
 
-        with tab2:
-            st.subheader("What drives this prediction?")
-            # Feature Importance
-            if hasattr(model, 'feature_importances_'):
-                fi_df = pd.DataFrame({
-                    'Feature': model_columns,
-                    'Importance': model.feature_importances_
-                }).sort_values(by='Importance', ascending=False).head(10)
-                
-                fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', 
-                                title="Top 10 Influential Features", color='Importance')
-                fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
-                st.plotly_chart(fig_fi, use_container_width=True)
-                
+        # Gauge Chart centered
+        fig_gauge = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = prediction,
+            domain = {'x': [0, 1], 'y': [0, 1]},
+            title = {'text': "Rating Confidence"},
+            gauge = {
+                'axis': {'range': [0, 5], 'tickwidth': 1},
+                'bar': {'color': state_color},
+                'steps': [
+                    {'range': [0, 2], 'color': 'rgba(255, 0, 0, 0.1)'},
+                    {'range': [2, 4], 'color': 'rgba(255, 165, 0, 0.1)'},
+                    {'range': [4, 5], 'color': 'rgba(0, 128, 0, 0.1)'}],
+                'threshold': {
+                    'line': {'color': "black", 'width': 4},
+                    'thickness': 0.75,
+                    'value': prediction}
+            }
+        ))
+        fig_gauge.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
+        st.plotly_chart(fig_gauge, use_container_width=True)
+        
+        st.markdown("---")
+
+        # --- Section 3: Drivers ---
+        st.subheader("3. What Drove This Score?")
+        st.caption("The graph below shows the 'Feature Importance', indicating which factors the model heavily relies on when calculating ratings generally.")
+        
+        if hasattr(model, 'feature_importances_'):
+            fi_df = pd.DataFrame({
+                'Feature': model_columns,
+                'Importance': model.feature_importances_
+            }).sort_values(by='Importance', ascending=False).head(8)
+            
+            fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', 
+                            color='Importance', color_continuous_scale='Bluered')
+            fig_fi.update_layout(yaxis={'categoryorder':'total ascending'}, height=350, margin=dict(l=0, r=0, t=0, b=0))
+            st.plotly_chart(fig_fi, use_container_width=True)
+            
+        st.info("💡 **Note:** High odometer reading and presence of 'Abnormal Sound' or 'Oil Leaks' typically penalize the score significantly.")
+            
     except Exception as e:
         st.error(f"Prediction Error: {e}")
 
