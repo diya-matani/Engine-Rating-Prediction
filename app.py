@@ -26,7 +26,7 @@ def get_data():
     return None
 
 @st.cache_resource
-def get_model():
+def load_model_pipeline():
     if os.path.exists(MODEL_PATH):
         try:
             with open(MODEL_PATH, 'rb') as f:
@@ -43,7 +43,7 @@ def main():
     
     # 2. Load Resources
     df = get_data()
-    model = get_model()
+    model = load_model_pipeline()
     
     # 3. Process Data for Schema
     if df is not None:
