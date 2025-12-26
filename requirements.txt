@@ -13,3 +13,4 @@ jupyter
 streamlit
 graphviz
 joblib
+# Force Rebuild: 2025-12-26 - Fix sklearn version

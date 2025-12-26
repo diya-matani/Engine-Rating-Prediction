@@ -49,6 +49,9 @@ def main():
     # 1. Setup Styles
     ui.render_style()
     
+    # DEBUG BANNER
+    st.warning(f"⚠️ DEBUG MODE: Running Scikit-learn Version: {sklearn.__version__} (Target: 1.6.0)")
+    
     # 2. Load Resources
     df = get_data()
     model = load_model_pipeline()
