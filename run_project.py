@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import re
 import pickle
+import json
 import warnings
 from lightgbm import LGBMRegressor
 from sklearn.model_selection import train_test_split
@@ -161,6 +162,10 @@ def train_model(X, y):
     
     print(f"Training R2 Score: {train_score:.4f}")
     print(f"Test R2 Score: {test_score:.4f}")
+    
+    # Save model columns
+    with open('model_columns.json', 'w') as f:
+        json.dump(list(X.columns), f)
     
     return model
 

@@ -1,0 +1,14 @@
+'Car_Features.csv' not found. Loading 'data.xlsx' instead...
+Preprocessing data...
+One-hot encoding remaining categorical features: ['fuel_type']
+Splitting data and training model...
+[LightGBM] [Info] Auto-choosing row-wise multi-threading, the overhead of testing was 0.001769 seconds.
+You can set `force_row_wise=true` to remove the overhead.
+And if memory is not enough, you can set `force_col_wise=true`.
+[LightGBM] [Info] Total Bins 427
+[LightGBM] [Info] Number of data points in the train set: 21045, number of used features: 62
+[LightGBM] [Info] Start training from score 3.458921
+Training R2 Score: 0.6901
+Test R2 Score: 0.6495
+Saving model to final_model_lgbm.pickle...
+Model saved successfully.
