@@ -50,7 +50,7 @@ def main():
     ui.render_style()
     
     # DEBUG BANNER
-    st.warning(f"⚠️ DEBUG MODE: Running Scikit-learn Version: {sklearn.__version__} (Target: 1.6.0)")
+    st.warning(f"⚠️ DEBUG MODE: Running Scikit-learn Version: {sklearn.__version__} (Target: 1.3.1)")
     
     # 2. Load Resources
     df = get_data()
