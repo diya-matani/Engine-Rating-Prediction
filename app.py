@@ -45,7 +45,29 @@ def load_resources():
         st.error(f"Error loading resources: {e}. Please ensure 'final_model_lgbm.pickle' and 'model_columns.json' exist.")
         return None, None
 
+@st.cache_data
+def load_data():
+    """Loads the historical dataset for visualization."""
+    try:
+        # Try CSV first
+        df = pd.read_csv('Car_Features.csv')
+    except:
+        try:
+            # Fallback to Excel
+            df = pd.read_excel('data.xlsx', sheet_name='data')
+        except Exception as e:
+            return None
+    
+    # Preprocessing for text optimization
+    if 'inspectionStartTime' in df.columns:
+        df['inspectionStartTime'] = pd.to_datetime(df['inspectionStartTime'])
+        df['inspection_date'] = df['inspectionStartTime'].dt.date
+        df['inspection_mon'] = df['inspectionStartTime'].dt.month_name()
+        df['inspection_month_num'] = df['inspectionStartTime'].dt.month
+    return df
+
 model, model_columns = load_resources()
+df_history = load_data()
 
 def main():
     # --- Sidebar Inputs ---
@@ -270,10 +292,66 @@ def main():
                 'Importance': model.feature_importances_
             }).sort_values(by='Importance', ascending=False).head(10)
             
-            fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', 
-                            color='Importance', color_continuous_scale='Viridis')
             fig_fi.update_layout(yaxis={'categoryorder':'total ascending'}, height=350)
             st.plotly_chart(fig_fi, use_container_width=True)
+            
+        # --- Section 4: Historical Data Insights (New Request) ---
+        if df_history is not None:
+            st.markdown("---")
+            st.header("📈 Historical Market Trends")
+            st.caption("Insights derived from the historical dataset of car inspections. These graphs help understand the broader market context.")
+
+            # 1. Registration Year Distribution
+            st.subheader("1. Vehicle Age Distribution")
+            st.caption("Shows the volume of inspections based on the car's **Registration Year**. This helps identify the most common vintage of cars being inspected.")
+            
+            if 'registrationYear' in df_history.columns:
+                reg_counts = df_history['registrationYear'].value_counts().sort_index()
+                fig_reg = px.bar(x=reg_counts.index, y=reg_counts.values, 
+                                 labels={'x': 'Registration Year', 'y': 'Count of Inspections'})
+                fig_reg.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
+                st.plotly_chart(fig_reg, use_container_width=True)
+
+            # 2. Daily Inspections (Histogram/KDE)
+            st.subheader("2. Daily Inspection Intensity")
+            st.caption("Distribution of the number of inspections performed per day. Peaks indicate high-traffic operational days.")
+            
+            if 'inspection_date' in df_history.columns:
+                daily_counts = df_history.groupby('inspection_date').size().reset_index(name='count')
+                fig_hist = px.histogram(daily_counts, x="count", nbins=30, marginal="violin",
+                                        labels={'count': 'Daily Inspections'})
+                fig_hist.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
+                st.plotly_chart(fig_hist, use_container_width=True)
+
+            # 3. Monthly Trend (Bar)
+            st.subheader("3. Monthly Seasonality")
+            st.caption("Inspection volume aggregated by month. Useful for planning resource allocation based on seasonal demand.")
+            
+            if 'inspection_mon' in df_history.columns:
+                # Sort by month number
+                mon_counts = df_history.groupby(['inspection_month_num', 'inspection_mon']).size().reset_index(name='count')
+                mon_counts = mon_counts.sort_values('inspection_month_num')
+                
+                fig_mon = px.bar(mon_counts, x='inspection_mon', y='count',
+                                 labels={'inspection_mon': 'Month', 'count': 'Total Inspections'},
+                                 color='count', color_continuous_scale='Blues')
+                fig_mon.update_layout(height=350, margin=dict(l=20, r=20, t=20, b=20))
+                st.plotly_chart(fig_mon, use_container_width=True)
+
+            # 4. Time Series with Rolling Average
+            st.subheader("4. Inspection Trends Over Time")
+            st.caption("Daily inspection volume over the entire dataset timeline, with a **7-day rolling average** (orange line) to smooth out daily volatility.")
+            
+            if 'inspection_date' in df_history.columns:
+                ts_data = df_history.groupby('inspection_date').size().reset_index(name='Original')
+                ts_data['Rolling Mean'] = ts_data['Original'].rolling(window=7).mean()
+                
+                fig_ts = go.Figure()
+                fig_ts.add_trace(go.Scatter(x=ts_data['inspection_date'], y=ts_data['Original'], mode='lines', name='Daily Count', line=dict(color='lightblue', width=1)))
+                fig_ts.add_trace(go.Scatter(x=ts_data['inspection_date'], y=ts_data['Rolling Mean'], mode='lines', name='7-Day Rolling Avg', line=dict(color='orange', width=2)))
+                
+                fig_ts.update_layout(xaxis_title="Date", yaxis_title="Number of Inspections", height=400, margin=dict(l=20, r=20, t=20, b=20))
+                st.plotly_chart(fig_ts, use_container_width=True)
             
     except Exception as e:
         st.error(f"Prediction Error: {e}")
