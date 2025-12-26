@@ -25,7 +25,7 @@ st.set_page_config(page_title="Engine Rating AI", layout="wide", initial_sidebar
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_PATH = os.path.join(BASE_DIR, 'data.xlsx')
-MODEL_PATH = os.path.join(BASE_DIR, 'models', 'model_pipeline.pkl')
+MODEL_PATH = os.path.join(BASE_DIR, 'models', 'model_v2.joblib')
 
 @st.cache_data
 def get_data():

@@ -11,7 +11,7 @@ from src.preprocess import prepare_input_df
 
 def test_prediction():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_path = os.path.join(base_dir, 'models', 'model_pipeline.pkl')
+    model_path = os.path.join(base_dir, 'models', 'model_v2.joblib')
     data_path = os.path.join(base_dir, 'data.xlsx')
 
     print(f"Python Executable: {sys.executable}")

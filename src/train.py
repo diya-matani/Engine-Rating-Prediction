@@ -67,7 +67,7 @@ def train_model():
     
     # Save
     import joblib
-    model_path = os.path.join(models_dir, 'model_pipeline.pkl')
+    model_path = os.path.join(models_dir, 'model_v2.joblib')
     
     # 1. Force remove old file to ensure no stale handle
     if os.path.exists(model_path):

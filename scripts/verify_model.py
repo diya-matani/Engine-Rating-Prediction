@@ -4,7 +4,7 @@ import sys
 
 def verify():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_path = os.path.join(base_dir, 'models', 'model_pipeline.pkl')
+    model_path = os.path.join(base_dir, 'models', 'model_v2.joblib')
     
     print(f"Checking model at: {model_path}")
     if not os.path.exists(model_path):
