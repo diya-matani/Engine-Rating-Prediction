@@ -15,7 +15,7 @@ def load_data(filepath):
         # Try finding data.xlsx if default name wasn't found
         if filepath == 'Car_Features.csv' and os.path.exists('data.xlsx'):
             print(f"'{filepath}' not found. Loading 'data.xlsx' instead...")
-            return pd.read_excel('data.xlsx')
+            return pd.read_excel('data.xlsx', sheet_name='data')
         else:
             raise FileNotFoundError(f"File not found: {filepath}")
             
@@ -23,7 +23,7 @@ def load_data(filepath):
     if filepath.endswith('.csv'):
         return pd.read_csv(filepath)
     elif filepath.endswith('.xlsx'):
-        return pd.read_excel(filepath)
+        return pd.read_excel(filepath, sheet_name='data')
     else:
         # Fallback to csv if unknown extension but we'll try
         return pd.read_csv(filepath)
@@ -124,6 +124,10 @@ def preprocess_data(df):
     if categorical_features:
         print(f"One-hot encoding remaining categorical features: {categorical_features}")
         X = pd.get_dummies(X, columns=categorical_features, drop_first=True)
+        
+    # Sanitize column names for LightGBM to avoid "Do not support special JSON characters in feature name" error
+    # Replace non-alphanumeric characters with underscores
+    X.columns = ["".join (c if c.isalnum() else "_" for c in str(col)) for col in X.columns]
         
     return X, y
 
