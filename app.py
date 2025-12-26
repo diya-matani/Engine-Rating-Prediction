@@ -1,30 +1,36 @@
 import streamlit as st
+# Set page config must be the very first Streamlit command
+st.set_page_config(page_title="Engine Rating AI", layout="wide", initial_sidebar_state="expanded", page_icon="🏎️")
+
 import pandas as pd
 import os
 import sys
 import joblib
 import sklearn
-
+import traceback
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from src.preprocess import load_data, basic_cleaning, prepare_input_df, get_pipeline
-from src import ui, analytics
-import importlib
-import src.preprocess
-import src.ui
-import src.analytics
-importlib.reload(src.preprocess)
-importlib.reload(src.ui)
-importlib.reload(src.analytics)
+# WRAP EVERYTHING IN TRY-CATCH TO CATCH FATAL IMPORT ERRORS
+try:
+    from src.preprocess import load_data, basic_cleaning, prepare_input_df, get_pipeline
+    from src import ui, analytics
+    import importlib
+    import src.preprocess
+    import src.ui
+    import src.analytics
+    importlib.reload(src.preprocess)
+    importlib.reload(src.ui)
+    importlib.reload(src.analytics)
 
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-
-# Set page config must be the very first Streamlit command
-st.set_page_config(page_title="Engine Rating AI", layout="wide", initial_sidebar_state="expanded", page_icon="🏎️")
+    from sklearn.ensemble import RandomForestRegressor
+    from sklearn.pipeline import Pipeline
+    from sklearn.model_selection import train_test_split
+except Exception as e:
+    st.error("CRITICAL ERROR: Failed to import dependencies.")
+    st.exception(e)
+    st.stop()
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
