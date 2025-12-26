@@ -110,22 +110,22 @@ def main():
         # Odometer
         input_features['odometer_reading'] = input_data['odometer_reading']
         
-            # map fuel type selection to checking availability
-            if fuel_type == "Petrol":
-                fuel_col = "fuel_type_Petrol"
-            elif fuel_type == "CNG":
-                fuel_col = "fuel_type_Petrol___CNG"
-            elif fuel_type == "LPG":
-                fuel_col = "fuel_type_Petrol___LPG"
-            elif fuel_type == "Electric":
-                fuel_col = "fuel_type_Electric"
-            elif fuel_type == "Hybrid":
-                fuel_col = "fuel_type_Hybrid"
-            else:
-                fuel_col = None # Diesel or others might be baseline (all 0) or simply not present as specific col
-            
-            if fuel_col and fuel_col in input_features:
-                input_features[fuel_col] = 1
+        # map fuel type selection to checking availability
+        if fuel_type == "Petrol":
+            fuel_col = "fuel_type_Petrol"
+        elif fuel_type == "CNG":
+            fuel_col = "fuel_type_Petrol___CNG"
+        elif fuel_type == "LPG":
+            fuel_col = "fuel_type_Petrol___LPG"
+        elif fuel_type == "Electric":
+            fuel_col = "fuel_type_Electric"
+        elif fuel_type == "Hybrid":
+            fuel_col = "fuel_type_Hybrid"
+        else:
+            fuel_col = None # Diesel or others might be baseline (all 0) or simply not present as specific col
+        
+        if fuel_col and fuel_col in input_features:
+            input_features[fuel_col] = 1
             
         # 4. Engine Transmission Features
         # Exact mapping based on model_columns.json inspection
