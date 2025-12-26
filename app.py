@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 import sys
-import pickle
+import joblib
+import sklearn
+
 
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -23,14 +25,13 @@ def get_data():
     if os.path.exists(DATA_PATH):
         df = load_data(DATA_PATH)
         return df
-    return None
 
 @st.cache_resource
 def load_model_pipeline():
     if os.path.exists(MODEL_PATH):
         try:
-            with open(MODEL_PATH, 'rb') as f:
-                model = pickle.load(f)
+            # Use joblib instead of pickle
+            model = joblib.load(MODEL_PATH)
             return model
         except Exception as e:
             st.error(f"Error loading model: {e}")
@@ -61,6 +62,14 @@ def main():
 
     # 5. Render Sidebar & Capture Inputs
     user_inputs, mode, predict_btn = ui.render_sidebar(features_df)
+
+    # 5b. Debug Info in Sidebar
+    with st.sidebar:
+        with st.expander("🔧 Runtime Diagnostics"):
+            st.write(f"**Python**: {sys.version.split()[0]}")
+            st.write(f"**Scikit-learn**: {sklearn.__version__}")
+            st.write(f"**Executable**: {sys.executable}")
+            st.write(f"**Model Path**: {MODEL_PATH}")
 
     # 6. Render Top Metrics
     ui.render_metrics(df_clean)

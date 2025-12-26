@@ -66,9 +66,19 @@ def train_model():
     print(f"Test R2: {r2:.4f}")
     
     # Save
+    import joblib
     model_path = os.path.join(models_dir, 'model_pipeline.pkl')
-    with open(model_path, 'wb') as f:
-        pickle.dump(model, f)
+    
+    # 1. Force remove old file to ensure no stale handle
+    if os.path.exists(model_path):
+        try:
+            os.remove(model_path)
+            print(f"Removed old model file at {model_path}")
+        except Exception as e:
+            print(f"WARNING: Could not remove old file: {e}")
+            
+    # 2. Save with joblib (better for sklearn)
+    joblib.dump(model, model_path)
     
     print(f"Model saved to {model_path}")
 

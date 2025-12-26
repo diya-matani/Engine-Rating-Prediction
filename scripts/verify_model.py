@@ -11,9 +11,9 @@ def verify():
         print("Model file not found.")
         return
 
+    import joblib
     try:
-        with open(model_path, 'rb') as f:
-            model = pickle.load(f)
+        model = joblib.load(model_path)
         print("Model loaded successfully!")
         print("Pipeline steps:", [step[0] for step in model.steps])
     except Exception as e:
