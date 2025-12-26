@@ -75,11 +75,23 @@ def main():
 
     # 5b. Debug Info in Sidebar
     with st.sidebar:
-        with st.expander("🔧 Runtime Diagnostics"):
+        with st.expander("🔧 Runtime Diagnostics", expanded=True):
             st.write(f"**Python**: {sys.version.split()[0]}")
             st.write(f"**Scikit-learn**: {sklearn.__version__}")
+            st.write(f"**Joblib**: {joblib.__version__}")
             st.write(f"**Executable**: {sys.executable}")
             st.write(f"**Model Path**: {MODEL_PATH}")
+            
+            # File Integrity Check
+            if os.path.exists(MODEL_PATH):
+                import hashlib
+                with open(MODEL_PATH, "rb") as f:
+                    file_hash = hashlib.sha256(f.read()).hexdigest()
+                file_size = os.path.getsize(MODEL_PATH)
+                st.write(f"**Model Size**: {file_size/1024:.2f} KB")
+                st.code(f"Hash: {file_hash[:10]}...", language="text")
+            else:
+                st.error("Model File Not Found!")
 
     # 6. Render Top Metrics
     ui.render_metrics(df_clean)
