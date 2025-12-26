@@ -50,7 +50,7 @@ def main():
             odometer_reading = st.number_input("Odometer Reading", min_value=0, value=50000)
             
             # Fuel Type (We need to know valid options, adding common ones for now based on notebook view)
-            fuel_type = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG", "Electric", "Hybrid"])
+            fuel_type = st.selectbox("Fuel Type", ["Petrol", "Diesel", "CNG", "LPG", "Electric", "Hybrid"])
 
         with col2:
             st.info("Additional engine and transmission checks can be added here. For this demo, we assume standard conditions for unlisted features.")
@@ -110,49 +110,39 @@ def main():
         # Odometer
         input_features['odometer_reading'] = input_data['odometer_reading']
         
-        # 3. Categorical Features (One-Hot Encoded in training)
-        # fuel_type
-        fuel_col = f"fuel_type_{input_data['fuel_type']}"
-        # Sanitize column name to match training
-        fuel_col = "".join(c if c.isalnum() else "_" for c in fuel_col)
-        
-        if fuel_col in input_features:
-            input_features[fuel_col] = 1
+            # map fuel type selection to checking availability
+            if fuel_type == "Petrol":
+                fuel_col = "fuel_type_Petrol"
+            elif fuel_type == "CNG":
+                fuel_col = "fuel_type_Petrol___CNG"
+            elif fuel_type == "LPG":
+                fuel_col = "fuel_type_Petrol___LPG"
+            elif fuel_type == "Electric":
+                fuel_col = "fuel_type_Electric"
+            elif fuel_type == "Hybrid":
+                fuel_col = "fuel_type_Hybrid"
+            else:
+                fuel_col = None # Diesel or others might be baseline (all 0) or simply not present as specific col
+            
+            if fuel_col and fuel_col in input_features:
+                input_features[fuel_col] = 1
             
         # 4. Engine Transmission Features
-        # These are the "combined_columns" in the notebook.
-        # Example from notebook: `engineTransmission_battery_value_Jump Start`
-        # Using our sanitized logic, this becomes something like `engineTransmission_battery_value_Jump_Start`
-        
-        # Mapping checkboxes to likely column names (Requires knowledge of exact column names)
-        # We try to match best guess. 
-        # Ideally, we should inspect `model_columns.json` to be perfect, but let's try standard patterns.
-        
+        # Exact mapping based on model_columns.json inspection
         checkbox_map = {
-            battery_jump_start: 'engineTransmission_battery_value_Jump_Start', # Guess
-            engine_oil_leak: 'engineTransmission_engineOil_value_Leaking', # Guess
-            engine_sound_abnormal: 'engineTransmission_engineSound_value_Abnormal',
-            exhaust_smoke_white: 'engineTransmission_exhaustSmoke_value_White',
-            clutch_hard: 'engineTransmission_clutch_value_Hard',
-            gear_shifting_hard: 'engineTransmission_gearShifting_value_Hard'
+            battery_jump_start: 'engineTransmission_battery_cc_value_Jump_Start', 
+            engine_oil_leak: 'engineTransmission_engineOil_cc_value_Leaking',
+            # Using 'Engine Auxiliary Noise' as proxy for abnormal sound checkbox
+            engine_sound_abnormal: 'engineTransmission_engineSound_cc_value_Engine_Auxiliary_Noise',
+            exhaust_smoke_white: 'engineTransmission_exhaustSmoke_cc_value_White',
+            clutch_hard: 'engineTransmission_clutch_cc_value_Hard',
+            # Using 'Not Engaging' for gear shifting issue
+            gear_shifting_hard: 'engineTransmission_gearShifting_cc_value_Not_Engaging'
         }
         
-        # We need to find the actual matching column in model_columns because sanitization might have changed them slightly
-        # or the prefix might be different (e.g. `cc_value_0` intermediate steps).
-        # In the script `run_project.py`, we combined: `base_name}_{suffix}`
-        # e.g. `engineTransmission_battery_cc_value_Jump Start`
-        
-        for is_checked, partial_name in checkbox_map.items():
-            if is_checked:
-                # Find column that looks like this
-                # We normalize the partial name for search
-                search_term = partial_name.replace(' ', '_')
-                
-                # Simple loose matching
-                matches = [c for c in model_columns if search_term.lower() in c.lower()]
-                if matches:
-                    # Set the first match to 1
-                    input_features[matches[0]] = 1
+        for is_checked, col_name in checkbox_map.items():
+            if is_checked and col_name in input_features:
+                input_features[col_name] = 1
         
         # Create DataFrame
         X_input = pd.DataFrame([input_features])
