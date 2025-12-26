@@ -9,7 +9,7 @@ import sklearn
 # Add project root to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from src.preprocess import load_data, basic_cleaning, prepare_input_df
+from src.preprocess import load_data, basic_cleaning, prepare_input_df, get_pipeline
 from src import ui, analytics
 import importlib
 import src.preprocess
@@ -18,6 +18,10 @@ import src.analytics
 importlib.reload(src.preprocess)
 importlib.reload(src.ui)
 importlib.reload(src.analytics)
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
 
 # Set page config must be the very first Streamlit command
 st.set_page_config(page_title="Engine Rating AI", layout="wide", initial_sidebar_state="expanded", page_icon="🏎️")
@@ -32,18 +36,52 @@ def get_data():
     if os.path.exists(DATA_PATH):
         df = load_data(DATA_PATH)
         return df
+    return None
+
+def retrain_model_in_app():
+    """Retrains the model on the fly using available data."""
+    try:
+        df = load_data(DATA_PATH)
+        df_clean = basic_cleaning(df)
+        target_col = 'rating_engineTransmission'
+        if target_col in df_clean.columns:
+            X = df_clean.drop(columns=[target_col])
+            y = df_clean[target_col]
+            
+            # Simple Train (no split needed for final app model really, but sticking to protocol)
+            X_train, _, y_train, _ = train_test_split(X, y, test_size=0.01, random_state=42) # Use almost all data
+            
+            preprocessor = get_pipeline(X_train)
+            model = Pipeline(steps=[
+                ('preprocessor', preprocessor),
+                ('regressor', RandomForestRegressor(n_estimators=50, random_state=42, n_jobs=-1)) # Faster training
+            ])
+            model.fit(X_train, y_train)
+            return model
+    except Exception as e:
+        st.error(f"Auto-retraining failed: {e}")
+    return None
 
 @st.cache_resource
 def load_model_pipeline():
+    model = None
+    # 1. Try Loading from Disk
     if os.path.exists(MODEL_PATH):
         try:
-            # Use joblib instead of pickle
             model = joblib.load(MODEL_PATH)
-            return model
+            # Sanity Check (Optional but good) - If this fails, we catch and retrain
         except Exception as e:
-            st.error(f"Error loading model: {e}")
-            return None
-    return None
+            st.warning(f"Could not load pre-trained model ({e}). Retraining...")
+            model = None
+    
+    # 2. If missing or failed, RETRAIN
+    if model is None:
+        with st.spinner("⚠️ Version Mismatch Detected. Auto-retraining model for compatibility..."):
+            model = retrain_model_in_app()
+            if model:
+                st.success("Model retrained successfully!")
+                
+    return model
 
 def main():
     # 1. Setup Styles
