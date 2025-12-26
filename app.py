@@ -156,8 +156,31 @@ def main():
             st.success(f"Predicted Engine Rating: {prediction:.2f}")
             
             # Visual Gauge (Simple progress bar for rating 0-5)
-            # Assuming rating is approx 0 to 5 or 0 to 10? Notebook target was `rating_engineTransmission`.
-            st.progress(min(max(prediction / 5.0, 0.0), 1.0)) # Normalize to 0-1 assuming max rating is 5
+            # Assuming rating is approx 0 to 5.
+            rating_val = min(max(prediction / 5.0, 0.0), 1.0)
+            st.progress(rating_val) 
+            
+            # Interpret Rating
+            if prediction >= 4.0:
+                status = "Excellent Condition! 🌟"
+                color = "green"
+            elif prediction >= 3.0:
+                status = "Good Condition 👍"
+                color = "blue"
+            elif prediction >= 2.0:
+                status = "Average / Fair ⚠️"
+                color = "orange"
+            else:
+                status = "Poor Condition 🛑"
+                color = "red"
+            
+            st.markdown(f"### Status: :{color}[{status}]")
+            
+            # Additional Context
+            if prediction < 3.0:
+                st.warning("The predicted engine rating is low. Careful inspection is recommended.")
+            else:
+                st.success("The engine seems to be in good shape based on the inputs.")
             
         except Exception as e:
             st.error(f"Prediction Error: {e}")
