@@ -30,6 +30,19 @@ model, model_columns = load_resources()
 def main():
     st.title("🚗 Engine Rating Prediction")
     st.markdown("Enter the car details below to predict the engine rating.")
+    
+    # Toggle for Project Details
+    if st.toggle("Show Project Details"):
+        st.info("""
+        **Project Overview:**
+        - **Objective:** Predict the engine rating (quality score) of valid used cars based on inspection data.
+        - **Model:** LightGBM Regressor (Gradient Boosting Framework).
+        - **Key Features:**
+            - **Inspection Time:** Day, Month, Hour.
+            - **Odometer:** Total distance travelled.
+            - **Diagnostics:** Engine sound, oil leakage, battery status, smoke color, etc.
+        - **Logic:** The model was trained on historical data where categorical features were combined (e.g., specific battery issues) to capture complex patterns.
+        """)
 
     if not model:
         return
