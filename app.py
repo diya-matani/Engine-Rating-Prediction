@@ -348,45 +348,61 @@ def main():
                 st.warning("Historical data not available for trends.")
 
 
-        # ================= TAB 3: Data Table (Enhanced) =================
+        # ================= TAB 3: Data Table (Refined) =================
         with tab_data:
             st.markdown("### 📄 Inspection Records Database")
             if df_history is not None:
-                # Controls for Sorting/Filtering
-                c_filter, c_sort = st.columns([1, 2])
-                with c_filter:
-                    show_weak = st.checkbox("⚠️ Show Weak Engines Only (Rating ≤ 2)", value=False, help="Filter to show only cars with poor engine ratings.")
-                with c_sort:
-                    sort_mode = st.radio("Sort By:", ["Newest First", "Rating: Low → High", "Rating: High → Low"], horizontal=True)
-
-                # Select and Rename Columns for clearer display
-                display_cols = ['inspectionStartTime', 'year', 'rating_engineTransmission', 'odometer_reading', 'fuel_type']
-                existing_cols = [c for c in display_cols if c in df_history.columns]
+                # Filter Control
+                show_weak = st.checkbox("⚠️ Show Weak Engines Only (Rating ≤ 2)", value=False, help="Filter to show only cars with poor engine ratings.")
                 
-                df_view = df_history.copy()
+                # Column Configuration & Renaming
+                # Map raw names to clean names
+                col_mapping = {
+                    'inspectionStartTime': 'Inspection Date',
+                    'year': 'Year', 
+                    'rating_engineTransmission': 'Engine Rating',
+                    'odometer_reading': 'Odometer (km)',
+                    'fuel_type': 'Fuel Type'
+                }
+                
+                # Create view with specific columns
+                available_cols = [c for c in col_mapping.keys() if c in df_history.columns]
+                df_view = df_history[available_cols].rename(columns=col_mapping).copy()
                 
                 # Apply Filter
-                if show_weak and 'rating_engineTransmission' in df_view.columns:
-                    df_view = df_view[df_view['rating_engineTransmission'] <= 2]
+                if show_weak and 'Engine Rating' in df_view.columns:
+                    df_view = df_view[df_view['Engine Rating'] <= 2]
                 
-                # Apply Sort
-                if sort_mode == "Rating: Low → High" and 'rating_engineTransmission' in df_view.columns:
-                    df_view = df_view.sort_values('rating_engineTransmission', ascending=True)
-                elif sort_mode == "Rating: High → Low" and 'rating_engineTransmission' in df_view.columns:
-                    df_view = df_view.sort_values('rating_engineTransmission', ascending=False)
-                elif sort_mode == "Newest First" and 'inspectionStartTime' in df_view.columns:
-                    df_view = df_view.sort_values('inspectionStartTime', ascending=False)
+                # Ensure 'Inspection Date' is sorted descending by default if user hasn't sorted manually
+                if 'Inspection Date' in df_view.columns:
+                     df_view = df_view.sort_values('Inspection Date', ascending=False)
 
-                # Display with highlighting
+                # Display with proper formatting
+                # Using st.column_config for better UX
                 st.dataframe(
-                    df_view[existing_cols].style.background_gradient(cmap='Reds', subset=['rating_engineTransmission'], vmin=0, vmax=5), 
+                    df_view.style.background_gradient(cmap='Reds', subset=['Engine Rating'], vmin=0, vmax=5).format({'Engine Rating': '{:.1f}'}),
                     use_container_width=True,
-                    height=500
+                    height=500,
+                    column_config={
+                        "Engine Rating": st.column_config.NumberColumn(
+                            "Engine Rating",
+                            help="AI Predicted Rating (0-5)",
+                            min_value=0,
+                            max_value=5,
+                            step=0.1,
+                            format="%.1f ⭐",
+                        ),
+                        "Inspection Date": st.column_config.DatetimeColumn(
+                            "Inspection Date",
+                            format="D MMM YYYY, HH:mm",
+                        ),
+                    },
+                    hide_index=True
                 )
                 
-                # Download
-                csv = df_view[existing_cols].to_csv(index=False).encode('utf-8')
-                st.download_button("Download Filtered Data (CSV)", csv, "filtered_inspections.csv", "text/csv")
+                # Download Button
+                csv = df_view.to_csv(index=False).encode('utf-8')
+                st.download_button("Download Data (CSV)", csv, "inspection_data.csv", "text/csv")
             else:
                 st.info("No historical data to display.")
 
