@@ -149,65 +149,13 @@ def main():
         rating_star = round(prediction)
         
         st.markdown("---")
-        st.header("📊 Inspection Report")
+        st.header("🏭 Engine Analytics & Quality Assurance")
         
-        # --- Section 1: Health Profile ---
-        st.subheader("1. Vehicle Health Profile")
-        st.caption("This radar chart visualizes the condition of key vehicle systems based on your inspection inputs. A full polygon indicates perfect health, while dents indicate reported issues.")
+        # --- Row 1: KPI Overview ---
+        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
         
-        # ... (Radar Chart Logic) ...
-        # Calculate scores
-        # Logic matches previous turn, just visualizing nicely
-        categories = ['Battery', 'Oil System', 'Sound', 'Exhaust', 'Clutch', 'Transmission']
-        r_values = [
-            100 if not battery_jump_start else 40,
-            100 if not engine_oil_leak else 30,
-            100 if not engine_sound_abnormal else 50,
-            100 if not exhaust_smoke_white else 40,
-            100 if not clutch_hard else 60,
-            100 if not gear_shifting_hard else 60
-        ]
-        
-        col_radar_chart, col_radar_text = st.columns([2, 1])
-        with col_radar_chart:
-            fig_radar = go.Figure()
-            fig_radar.add_trace(go.Scatterpolar(
-                r=r_values,
-                theta=categories,
-                fill='toself',
-                name='Current Status',
-                line_color='deepskyblue'
-            ))
-            fig_radar.update_layout(
-                polar=dict(
-                    radialaxis=dict(visible=True, range=[0, 100])
-                ),
-                margin=dict(l=40, r=40, t=30, b=30),
-                height=300
-            )
-            st.plotly_chart(fig_radar, use_container_width=True)
-            
-        with col_radar_text:
-            st.markdown(f"**Health Summary:**")
-            issues_count = len([x for x in r_values if x < 100])
-            if issues_count == 0:
-                st.success("✅ No specific issues reported.")
-            else:
-                st.warning(f"⚠️ {issues_count} system(s) flagged for attention.")
-                for cat, val in zip(categories, r_values):
-                    if val < 100:
-                        st.markdown(f"- **{cat}**: Issue Detected")
-
-        st.markdown("---")
-
-        # --- Section 2: Prediction ---
-        st.subheader("2. AI Engine Rating")
-        st.caption(f"The LightGBM model has analyzed the inputs (including {fuel_type} engine type, {odometer_reading} km usage) to predict the standardized rating.")
-
-        # Metric Cards Row
-        kpi1, kpi2, kpi3 = st.columns(3)
         with kpi1:
-            st.metric(label="Predicted Score", value=f"{prediction:.2f} / 5.0")
+            st.metric("Predicted Output", f"{prediction:.2f} / 5.0", delta_color="normal")
         with kpi2:
              status_map = {
                 5: ("Excellent", "green"),
@@ -219,50 +167,113 @@ def main():
             }
              p_int = max(0, min(5, int(round(prediction))))
              state_text, state_color = status_map.get(p_int, ("Unknown", "grey"))
-             st.metric(label="Condition", value=state_text)
+             st.metric("Quality Grade", state_text)
         with kpi3:
-             st.metric(label="Mileage Impact", value="High" if odometer_reading > 100000 else "Moderate" if odometer_reading > 50000 else "Low")
+             # Calculate a simple "Confidence Health %"
+             total_checks = 6
+             failed_checks = sum([1 for x in [battery_jump_start, engine_oil_leak, engine_sound_abnormal, exhaust_smoke_white, clutch_hard, gear_shifting_hard] if x])
+             health_pct = ((total_checks - failed_checks) / total_checks) * 100
+             st.metric("System Health", f"{health_pct:.0f}%", delta=f"-{failed_checks} Flags" if failed_checks > 0 else "Optimal")
+        with kpi4:
+             st.metric("Odometer Impact", "High" if odometer_reading > 100000 else "Normal")
 
-        # Gauge Chart centered
-        fig_gauge = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = prediction,
-            domain = {'x': [0, 1], 'y': [0, 1]},
-            title = {'text': "Rating Confidence"},
-            gauge = {
-                'axis': {'range': [0, 5], 'tickwidth': 1},
-                'bar': {'color': state_color},
-                'steps': [
-                    {'range': [0, 2], 'color': 'rgba(255, 0, 0, 0.1)'},
-                    {'range': [2, 4], 'color': 'rgba(255, 165, 0, 0.1)'},
-                    {'range': [4, 5], 'color': 'rgba(0, 128, 0, 0.1)'}],
-                'threshold': {
-                    'line': {'color': "black", 'width': 4},
-                    'thickness': 0.75,
-                    'value': prediction}
-            }
-        ))
-        fig_gauge.update_layout(height=300, margin=dict(l=20, r=20, t=30, b=20))
-        st.plotly_chart(fig_gauge, use_container_width=True)
-        
         st.markdown("---")
 
-        # --- Section 3: Drivers ---
-        st.subheader("3. What Drove This Score?")
-        st.caption("The graph below shows the 'Feature Importance', indicating which factors the model heavily relies on when calculating ratings generally.")
+        # --- Row 2: Trend Analysis (The "Honeywell" Line Chart style) ---
+        st.subheader("📉 Predictive Degradation Analysis")
+        st.caption("**What is this?** This graph simulates the future engine rating if the car continues to be driven without repairs. It shows the expected 'decay' of the rating over the next 50,000 km.")
+        
+        # logical simulation: Predict rating for current odometer + 10k, 20k...
+        future_odo = [odometer_reading + i*10000 for i in range(6)]
+        type_future = "Future Prediction"
+        
+        # We need to construct input DFs for these future points
+        future_preds = []
+        for odo in future_odo:
+            # Copy base features
+            feat_copy = input_features.copy()
+            feat_copy['odometer_reading'] = odo
+            # Make prediction
+            X_temp = pd.DataFrame([feat_copy])[model_columns]
+            pred_temp = model.predict(X_temp)[0]
+            future_preds.append(max(0, pred_temp)) # Clamp at 0
+            
+        fig_trend = go.Figure()
+        fig_trend.add_trace(go.Scatter(x=future_odo, y=future_preds, mode='lines+markers', name='Projected Rating', line=dict(color='#ff4b4b', width=3)))
+        fig_trend.update_layout(
+            title="Engine Rating vs. Odometer Reading (Projected)",
+            xaxis_title="Odometer (km)",
+            yaxis_title="Predicted Rating (0-5)",
+            height=350,
+            hovermode="x unified",
+            margin=dict(l=20, r=20, t=40, b=20)
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+        
+        col_trend_info, _ = st.columns([3, 1])
+        with col_trend_info:
+            st.info(f"ℹ️ **Interpretation:** At the current usage, the engine rating is projected to drop to **{future_preds[-1]:.2f}** after another 50,000 km. Regular maintenance can flatten this curve.")
+
+        st.markdown("---")
+        
+        # --- Row 3: Component Analysis (Pie + Radar) ---
+        st.subheader("🔍 Diagnostics & Health Distribution")
+        
+        col_pie, col_radar = st.columns(2)
+        
+        with col_pie:
+            st.markdown("##### System Status Distribution")
+            st.caption("**Explanation:** Shows the proportion of systems passing inspection vs. those flagged with issues.")
+            
+            # Pie Data
+            labels = ['Healthy Systems', 'Flagged Issues']
+            values = [total_checks - failed_checks, failed_checks]
+            colors = ['#00cc96', '#ef553b'] # Greenish, Reddish
+            
+            fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4, marker=dict(colors=colors))])
+            fig_pie.update_layout(height=300, margin=dict(l=20, r=20, t=20, b=20))
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
+        with col_radar:
+            st.markdown("##### Component Health Profile")
+            st.caption("**Explanation:** A balanced polygon indicates a well-maintained vehicle. Dents (inward points) identify specific failing components.")
+            
+            # Reuse calculated r_values for Radar
+            # categories = ['Battery', 'Oil', 'Sound', 'Exhaust', 'Clutch', 'Gears']
+            # r_values calculated previously
+            
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=r_values,
+                theta=categories,
+                fill='toself',
+                name='Health Score',
+                line_color='#636efa'
+            ))
+            fig_radar.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
+                showlegend=False,
+                height=300,
+                margin=dict(l=40, r=40, t=20, b=20)
+            )
+            st.plotly_chart(fig_radar, use_container_width=True)
+
+        st.markdown("---")
+
+        # --- Row 4: Algorithm Explainability ---
+        st.subheader("🧠 Model Decision Factors")
+        st.caption("**Why this result?** The bar chart below ranks the features that most influenced the AI's decision for this specific prediction context.")
         
         if hasattr(model, 'feature_importances_'):
             fi_df = pd.DataFrame({
                 'Feature': model_columns,
                 'Importance': model.feature_importances_
-            }).sort_values(by='Importance', ascending=False).head(8)
+            }).sort_values(by='Importance', ascending=False).head(10)
             
             fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', 
-                            color='Importance', color_continuous_scale='Bluered')
-            fig_fi.update_layout(yaxis={'categoryorder':'total ascending'}, height=350, margin=dict(l=0, r=0, t=0, b=0))
+                            color='Importance', color_continuous_scale='Viridis')
+            fig_fi.update_layout(yaxis={'categoryorder':'total ascending'}, height=350)
             st.plotly_chart(fig_fi, use_container_width=True)
-            
-        st.info("💡 **Note:** High odometer reading and presence of 'Abnormal Sound' or 'Oil Leaks' typically penalize the score significantly.")
             
     except Exception as e:
         st.error(f"Prediction Error: {e}")
