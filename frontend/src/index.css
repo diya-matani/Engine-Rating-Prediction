@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-honeywell-dark: #1a1a1a;
+  --color-honeywell-cream: #fcfbf4;
+  --color-honeywell-blue: #005EB8;
+  --color-honeywell-red: #ff4b4b;
+}
+
+@layer base {
+  body {
+    @apply antialiased text-gray-900 bg-honeywell-cream dark:bg-honeywell-dark dark:text-gray-100 transition-colors duration-300;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
