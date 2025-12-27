@@ -64,4 +64,4 @@ An advanced Machine Learning application designed to assess, predict, and analyz
 
 ---
 
-> **Note**: This project uses a custom "Honeywell" styling helper to ensure consistent dark-mode visuals across all charts.
+
