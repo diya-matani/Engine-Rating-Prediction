@@ -11,6 +11,9 @@ export function Header() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">EngineRater<span className="text-blue-600">.AI</span></h1>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Advanced Vehicle Diagnostics System</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 max-w-sm">
+                        Leveraging advanced AI to analyze vehicle telemetry and inspection data for accurate engine health ratings and market value assessment.
+                    </p>
                 </div>
             </div>
             <button className="hidden md:flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800 transition-all font-medium text-sm">
