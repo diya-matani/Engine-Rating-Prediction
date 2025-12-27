@@ -102,13 +102,65 @@ def main():
 
     # --- Main Dashboard ---
     
-    # Toggle for Light/Dark Mode
-    col_header, col_toggle = st.columns([6, 1])
+    # Initialize Session State for Theme
+    if 'theme' not in st.session_state:
+        st.session_state.theme = 'dark'
+
+    def toggle_theme():
+        if st.session_state.theme == 'dark':
+            st.session_state.theme = 'light'
+        else:
+            st.session_state.theme = 'dark'
+
+    # Determine current mode
+    is_light_mode = st.session_state.theme == 'light'
+    
+    # Dynamic CSS for App Background & Toggle Button
+    if is_light_mode:
+        app_bg_color = "#fcfbf4"
+        text_color = "#2c3e50"
+        toggle_icon = "🌙" # Button to switch TO dark
+        btn_tooltip = "Switch to Dark Mode"
+    else:
+        app_bg_color = "#0e1117" # Standard Streamlit Dark or custom #1a1a1a
+        text_color = "#e0e0e0"
+        toggle_icon = "☀️" # Button to switch TO light
+        btn_tooltip = "Switch to Light Mode"
+
+    st.markdown(f"""
+    <style>
+        .stApp {{
+            background-color: {app_bg_color};
+            color: {text_color};
+        }}
+        /* Force text color on metrics and headers if needed */
+        h1, h2, h3, h4, h5, h6, p, div, span {{
+            color: {text_color} !important;
+        }}
+        /* Metric Cards */
+        .metric-card {{
+            background-color: {'#ffffff' if is_light_mode else '#262730'}; 
+            border-left: 5px solid #ff4b4b;
+        }}
+        /* Button specific styling */
+        div.stButton > button:first-child {{
+            background-color: transparent;
+            border: 1px solid {text_color};
+            color: {text_color};
+            border-radius: 50%;
+            height: 45px;
+            width: 45px;
+            font-size: 20px;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+    # Header Layout
+    col_header, col_toggle = st.columns([8, 1])
     with col_header:
         st.title("🚗 Engine Rating Analysis Dashboard")
     with col_toggle:
-        st.write("") # Spacer
-        is_light_mode = st.toggle("☀️ Light Mode", value=False)
+        st.button(toggle_icon, on_click=toggle_theme, help=btn_tooltip)
 
     with st.expander("ℹ️ About this Project"):
         st.markdown("""
@@ -181,13 +233,13 @@ def main():
         # --- Helper for Honeywell Aesthetic ---
         def apply_honeywell_style(fig, title=None, height=300, light_mode=False):
             if light_mode:
-                # Light Mode Colors
-                paper_bg = '#ffffff'
-                plot_bg = '#f0f2f6'
-                font_color = '#333333'
-                grid_color = '#e0e0e0'
+                # Cream Mode Colors
+                paper_bg = '#fcfbf4'
+                plot_bg = '#fcfbf4'
+                font_color = '#2c3e50'
+                grid_color = '#ebdccb'
             else:
-                # Dark Mode Colors (Default Honeywell)
+                # Dark Mode Colors (Deep Gray)
                 paper_bg = 'rgba(0,0,0,0)'
                 plot_bg = 'rgba(0,0,0,0)'
                 font_color = '#e0e0e0'
