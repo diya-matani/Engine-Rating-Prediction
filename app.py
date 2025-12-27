@@ -101,8 +101,15 @@ def main():
         predict_btn = st.button("Run Prediction", type="primary", use_container_width=True)
 
     # --- Main Dashboard ---
-    st.title("🚗 Engine Rating Analysis Dashboard")
     
+    # Toggle for Light/Dark Mode
+    col_header, col_toggle = st.columns([6, 1])
+    with col_header:
+        st.title("🚗 Engine Rating Analysis Dashboard")
+    with col_toggle:
+        st.write("") # Spacer
+        is_light_mode = st.toggle("☀️ Light Mode", value=False)
+
     with st.expander("ℹ️ About this Project"):
         st.markdown("""
         **Objective:** Predict the quality rating (0-5) of a car's engine based on inspection data using a LightGBM regressor model.
@@ -172,16 +179,29 @@ def main():
         prediction = model.predict(X_input)[0]
         
         # --- Helper for Honeywell Aesthetic ---
-        def apply_honeywell_style(fig, title=None, height=300):
+        def apply_honeywell_style(fig, title=None, height=300, light_mode=False):
+            if light_mode:
+                # Light Mode Colors
+                paper_bg = '#ffffff'
+                plot_bg = '#f0f2f6'
+                font_color = '#333333'
+                grid_color = '#e0e0e0'
+            else:
+                # Dark Mode Colors (Default Honeywell)
+                paper_bg = 'rgba(0,0,0,0)'
+                plot_bg = 'rgba(0,0,0,0)'
+                font_color = '#e0e0e0'
+                grid_color = '#333333'
+
             fig.update_layout(
                 title=title,
-                paper_bgcolor='rgba(0,0,0,0)',
-                plot_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='#e0e0e0'),
+                paper_bgcolor=paper_bg,
+                plot_bgcolor=plot_bg,
+                font=dict(color=font_color),
                 height=height,
                 margin=dict(l=20, r=20, t=40, b=20),
-                xaxis=dict(showgrid=True, gridcolor='#333333'),
-                yaxis=dict(showgrid=True, gridcolor='#333333'),
+                xaxis=dict(showgrid=True, gridcolor=grid_color),
+                yaxis=dict(showgrid=True, gridcolor=grid_color),
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
             return fig
@@ -227,7 +247,7 @@ def main():
                 
             fig_trend = go.Figure()
             fig_trend.add_trace(go.Scatter(x=future_odo, y=future_preds, mode='lines+markers', name='Projected', line=dict(color='#ff4b4b', width=3)))
-            apply_honeywell_style(fig_trend, "Future Rating Prediction", height=320)
+            apply_honeywell_style(fig_trend, "Future Rating Prediction", height=320, light_mode=is_light_mode)
             st.plotly_chart(fig_trend, use_container_width=True)
             st.info(f"ℹ️ Prediction drops to **{future_preds[-1]:.2f}** after +50k km.")
 
@@ -241,7 +261,7 @@ def main():
                 labels = ['Healthy', 'Issues']
                 values = [total_checks - failed_checks, failed_checks]
                 fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.4, marker=dict(colors=['#00cc96', '#ef553b']))])
-                apply_honeywell_style(fig_pie, height=300)
+                apply_honeywell_style(fig_pie, height=300, light_mode=is_light_mode)
                 st.plotly_chart(fig_pie, use_container_width=True)
                 
             with col_radar:
@@ -257,8 +277,8 @@ def main():
                 ]
                 fig_radar = go.Figure()
                 fig_radar.add_trace(go.Scatterpolar(r=r_values, theta=categories, fill='toself', name='Score', line_color='#636efa'))
-                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100]), bgcolor='rgba(0,0,0,0)'))
-                apply_honeywell_style(fig_radar, height=300)
+                fig_radar.update_layout(polar=dict(radialaxis=dict(visible=True, range=[0, 100]), bgcolor= 'rgba(0,0,0,0)' if not is_light_mode else '#f0f2f6'))
+                apply_honeywell_style(fig_radar, height=300, light_mode=is_light_mode)
                 st.plotly_chart(fig_radar, use_container_width=True)
 
             # --- Row 4: Explainability ---
@@ -267,7 +287,7 @@ def main():
             if hasattr(model, 'feature_importances_'):
                 fi_df = pd.DataFrame({'Feature': model_columns, 'Importance': model.feature_importances_}).sort_values(by='Importance', ascending=False).head(10)
                 fig_fi = px.bar(fi_df, x='Importance', y='Feature', orientation='h', color='Importance')
-                apply_honeywell_style(fig_fi, height=350)
+                apply_honeywell_style(fig_fi, height=350, light_mode=is_light_mode)
                 fig_fi.update_layout(yaxis={'categoryorder':'total ascending'})
                 st.plotly_chart(fig_fi, use_container_width=True)
 
@@ -288,7 +308,7 @@ def main():
                     fig_ts = go.Figure()
                     fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Original'], name='Daily', line=dict(color='rgba(135, 206, 235, 0.5)', width=1)))
                     fig_ts.add_trace(go.Scatter(x=ts['inspection_date'], y=ts['Mean'], name='7-Day Avg', line=dict(color='#FFA15A', width=2)))
-                    apply_honeywell_style(fig_ts, "Daily Inspection Volume Trend", height=380)
+                    apply_honeywell_style(fig_ts, "Daily Inspection Volume Trend", height=380, light_mode=is_light_mode)
                     st.plotly_chart(fig_ts, use_container_width=True)
                 
                 # 2. Seasonality
@@ -298,7 +318,7 @@ def main():
                 if 'inspection_mon' in df_history.columns:
                     mc = df_history.groupby(['inspection_month_num', 'inspection_mon']).size().reset_index(name='count').sort_values('inspection_month_num')
                     fig_mon = px.bar(mc, x='inspection_mon', y='count', color='count', color_continuous_scale='Blues')
-                    apply_honeywell_style(fig_mon, "Monthly Inspection Volume", height=380)
+                    apply_honeywell_style(fig_mon, "Monthly Inspection Volume", height=380, light_mode=is_light_mode)
                     st.plotly_chart(fig_mon, use_container_width=True)
 
                 # 3. Vintage
@@ -309,7 +329,7 @@ def main():
                 if year_col:
                     rc = df_history[year_col].value_counts().sort_index()
                     fig_reg = px.bar(x=rc.index, y=rc.values, labels={'x':'Year', 'y':'Count'}, color_discrete_sequence=['#636efa'])
-                    apply_honeywell_style(fig_reg, "Vehicle Registration Year Distribution", height=380)
+                    apply_honeywell_style(fig_reg, "Vehicle Registration Year Distribution", height=380, light_mode=is_light_mode)
                     st.plotly_chart(fig_reg, use_container_width=True)
                 else:
                     st.info("Registration Year data unavailable.")
@@ -321,7 +341,7 @@ def main():
                 if 'inspection_date' in df_history.columns:
                     dc = df_history.groupby('inspection_date').size().reset_index(name='count')
                     fig_hist = px.histogram(dc, x="count", marginal="violin", nbins=30, color_discrete_sequence=['#00cc96'])
-                    apply_honeywell_style(fig_hist, "Distribution of Daily Inspection Counts", height=380)
+                    apply_honeywell_style(fig_hist, "Distribution of Daily Inspection Counts", height=380, light_mode=is_light_mode)
                     st.plotly_chart(fig_hist, use_container_width=True)
 
                 # 5. Odometer
@@ -330,7 +350,7 @@ def main():
                 st.markdown("**Insight:** Visualizes the spread of mileage across all inspected cars. The boxplot highlights the median usage and identifies 'outliers'—vehicles with exceptionally high or low mileage.")
                 if 'odometer_reading' in df_history.columns:
                     fig_box = px.box(df_history, y="odometer_reading", points="outliers", color_discrete_sequence=['#AB63FA'])
-                    apply_honeywell_style(fig_box, "Odometer Reading Distribution", height=400)
+                    apply_honeywell_style(fig_box, "Odometer Reading Distribution", height=400, light_mode=is_light_mode)
                     st.plotly_chart(fig_box, use_container_width=True)
                         
                 # 6. Heatmap
@@ -342,7 +362,7 @@ def main():
                 if len(ex)>1: 
                     corr = df_history[ex].corr()
                     fig_corr = px.imshow(corr, text_auto=True, color_continuous_scale='RdBu_r', origin='lower', aspect="auto")
-                    apply_honeywell_style(fig_corr, "Feature Correlation Matrix", height=450)
+                    apply_honeywell_style(fig_corr, "Feature Correlation Matrix", height=450, light_mode=is_light_mode)
                     st.plotly_chart(fig_corr, use_container_width=True)
             else:
                 st.warning("Historical data not available for trends.")
