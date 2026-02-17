@@ -1,19 +1,26 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import pickle
-import json
-import re
-import plotly.graph_objects as go
-import plotly.express as px
+import traceback
 
-# Set page config
+# Set page config MUST be the first streamlit command
 st.set_page_config(
     page_title="Engine Rating Dashboard",
     page_icon="🚗",
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+try:
+    import pandas as pd
+    import numpy as np
+    import pickle
+    import json
+    import re
+    import plotly.graph_objects as go
+    import plotly.express as px
+except Exception as e:
+    st.error(f"Failed to import dependencies: {e}")
+    st.code(traceback.format_exc())
+    st.stop()
 
 # Custom CSS for Dashboard Look
 st.markdown("""
