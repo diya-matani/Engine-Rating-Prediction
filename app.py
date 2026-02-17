@@ -68,8 +68,14 @@ def load_data():
         df['inspection_dow'] = df['inspectionStartTime'].dt.day_name()
     return df
 
-model, model_columns = load_resources()
-df_history = load_data()
+try:
+    model, model_columns = load_resources()
+    df_history = load_data()
+except Exception as e:
+    st.error(f"Critical Error during initialization: {e}")
+    # We don't stop here, but main will likely fail if model is None
+    model, model_columns = None, None
+    df_history = None
 
 def main():
     # --- Sidebar Inputs ---
