@@ -157,8 +157,8 @@ def main():
             background-color: {'#ffffff' if is_light_mode else '#262730'}; 
             border-left: 5px solid #ff4b4b;
         }}
-        /* Button specific styling */
-        div.stButton > button:first-child {{
+        /* Button specific styling - targeted to Main area (Theme Toggle) */
+        section[data-testid="stMain"] div.stButton > button:first-child {{
             background-color: transparent;
             border: 1px solid {text_color};
             color: {text_color};
