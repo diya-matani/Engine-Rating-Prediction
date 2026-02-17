@@ -1,12 +1,12 @@
-pandas==2.1.1
+pandas>=2.0.0
 numpy<2.0.0
 matplotlib
 seaborn
-scikit-learn==1.5.2
+scikit-learn>=1.2.2
 statsmodels
 scipy
-xgboost==3.1.2
-lightgbm==4.6.0
+xgboost>=1.7.0
+lightgbm>=3.3.0
 openpyxl
 streamlit
 plotly
