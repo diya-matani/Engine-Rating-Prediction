@@ -8,5 +8,6 @@ scipy
 xgboost>=1.7.0
 lightgbm==4.6.0
 openpyxl
-streamlit
+streamlit>=1.40.0
 plotly
+altair<6
