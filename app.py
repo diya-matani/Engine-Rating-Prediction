@@ -10,6 +10,8 @@ st.set_page_config(
 )
 
 try:
+    import matplotlib
+    matplotlib.use('Agg') # Prevent GUI errors on headless server
     import pandas as pd
     import numpy as np
     import pickle
